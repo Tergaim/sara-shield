@@ -7,7 +7,7 @@ Motion::Motion(int nb_modules):
     time_(0),
     s_(0)
 {
-  for (int i = 0; i < nb_modules_; i++){
+  for (int i = 0; i < nb_modules_*2; i++){
     q_.push_back(0.0);
     dq_.push_back(0.0);
     ddq_.push_back(0.0);
@@ -16,12 +16,12 @@ Motion::Motion(int nb_modules):
 }
 
 Motion::Motion(double time, const std::vector<double> &q, double s):
-    nb_modules_(q.size()),
+    nb_modules_(q.size()/2),
     time_(time),
     q_(q),
     s_(s)
 {
-  for (int i = 0; i < nb_modules_; i++){
+  for (int i = 0; i < nb_modules_*2; i++){
     dq_.push_back(0.0);
     ddq_.push_back(0.0);
     dddq_.push_back(0.0);
@@ -29,13 +29,13 @@ Motion::Motion(double time, const std::vector<double> &q, double s):
 }
 
 Motion::Motion(double time, const std::vector<double> &q, const std::vector<double> &dq, double s):
-    nb_modules_(q.size()),
+    nb_modules_(q.size()/2),
     time_(time),
     q_(q),
     dq_(dq),
     s_(s)
 {
-  for (int i = 0; i < nb_modules_; i++){
+  for (int i = 0; i < nb_modules_*2; i++){
     ddq_.push_back(0.0);
     dddq_.push_back(0.0);
   }
@@ -43,21 +43,21 @@ Motion::Motion(double time, const std::vector<double> &q, const std::vector<doub
 
 Motion::Motion(double time, const std::vector<double> &q, const std::vector<double> &dq, 
     const std::vector<double> &ddq, double s):
-    nb_modules_(q.size()),
+    nb_modules_(q.size()/2),
     time_(time),
     q_(q),
     dq_(dq),
     ddq_(ddq),
     s_(s)
 {
-  for (int i = 0; i < nb_modules_; i++){
+  for (int i = 0; i < nb_modules_*2; i++){
     dddq_.push_back(0.0);
   }
 }
 
 Motion::Motion(double time, const std::vector<double> &q, const std::vector<double> &dq, 
     const std::vector<double> &ddq, const std::vector<double> &dddq, double s):
-    nb_modules_(q.size()),
+    nb_modules_(q.size()/2),
     time_(time),
     q_(q),
     dq_(dq),

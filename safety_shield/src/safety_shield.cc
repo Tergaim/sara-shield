@@ -454,12 +454,7 @@ Motion SafetyShield::computesPotentialTrajectory(bool v, const std::vector<doubl
   }
 }
 
-bool SafetyShield::checkMotionForJointLimits(Motion& motion) {
-  for (int i = 0; i < nb_joints_; i++) {
-    if (motion.getAngle()[i] < q_min_allowed_[i] || motion.getAngle()[i] > q_max_allowed_[i]) {
-      return false;
-    }
-  }
+bool SafetyShield::checkMotionForJointLimits(Motion& motion) { // no joint limits in Safety Gym
   return true;
 }
 
@@ -527,8 +522,8 @@ Motion SafetyShield::step(double cycle_begin_time) {
         // Check if the starting position of the last replanning was very close to the current position
         bool last_close = true;
         if (new_ltt_ == true) {
-          for (int i = 0; i < current_motion.getAngle().size(); i++) {
-            if (std::abs(current_motion.getAngle()[i] - last_replan_start_motion_.getAngle()[i]) > 0.01) {
+          for (int i = 0; i < current_motion.getPos().size(); i++) {
+            if (std::abs(current_motion.getPos()[i] - last_replan_start_motion_.getPos()[i]) > 0.01) {
               last_close = false;
               break;
             }
@@ -539,8 +534,8 @@ Motion SafetyShield::step(double cycle_begin_time) {
         // Only replan if the current joint position is different from the last.
         bool success = true;
         if (!last_close) {
-          success = calculateLongTermTrajectory(current_motion.getAngle(), current_motion.getVelocity(), 
-            current_motion.getAcceleration(), new_goal_motion_.getAngle(), new_long_term_trajectory_);
+          success = calculateLongTermTrajectory(current_motion.getPos(), current_motion.getVelocity(), 
+            current_motion.getAcceleration(), new_goal_motion_.getPos(), new_long_term_trajectory_);
           if (success) {
             last_replan_start_motion_ = current_motion;
           }
@@ -611,7 +606,7 @@ Motion SafetyShield::getCurrentMotion() {
 }
 
 bool SafetyShield::checkCurrentMotionForReplanning(Motion& current_motion) {
-  for (int i = 0; i < nb_joints_; i++) {
+  for (int i = 0; i < nb_joints_*2; i++) {
     if (std::abs(current_motion.getAcceleration()[i]) > a_max_ltt_[i]) {
       return false;
     }
@@ -623,10 +618,10 @@ void SafetyShield::newLongTermTrajectory(const std::vector<double> &goal_positio
                                          const std::vector<double> &goal_velocity) {
   try { 
     std::vector<double> motion_q;
-    motion_q.reserve(nb_joints_); 
+    motion_q.reserve(nb_joints_*2); 
     std::vector<double> motion_dq;
-    motion_dq.reserve(nb_joints_); 
-    for (int i = 0; i < nb_joints_; i++) {
+    motion_dq.reserve(nb_joints_*2); 
+    for (int i = 0; i < nb_joints_*2; i++) {
       // TODO: replace with config max min values
       motion_q.push_back(std::clamp(goal_position[i], q_min_allowed_[i], q_max_allowed_[i]));
       motion_dq.push_back(std::clamp(goal_velocity[i], -v_max_allowed_[i], v_max_allowed_[i]));
@@ -636,7 +631,7 @@ void SafetyShield::newLongTermTrajectory(const std::vector<double> &goal_positio
     new_ltt_ = false;
     new_ltt_processed_ = false;
     std::vector<double> dummy_q;
-    for (int i = 0; i < nb_joints_; i++) {
+    for (int i = 0; i < nb_joints_*2; i++) {
       // fill with high values to guarantee this is not close to current joint position
       dummy_q.push_back(-1234567);
     }
@@ -691,12 +686,12 @@ bool SafetyShield::calculateLongTermTrajectory(const std::vector<double>& start_
   if (!success) return false;
   std::vector<Motion> new_traj(trajectory.length);
   double new_time = path_s_;
-  std::vector<double> q(nb_joints_);
-  std::vector<double> dq(nb_joints_);
-  std::vector<double> ddq(nb_joints_);
-  std::vector<double> dddq(nb_joints_);
+  std::vector<double> q(nb_joints_*2);
+  std::vector<double> dq(nb_joints_*2);
+  std::vector<double> ddq(nb_joints_*2);
+  std::vector<double> dddq(nb_joints_*2);
   for (int i = 0; i < trajectory.length; i++) {
-    for (int j=0; j < nb_joints_; j++) {
+    for (int j=0; j < nb_joints_*2; j++) {
       q[j] = trajectory.q[j][i];
       dq[j] = trajectory.v[j][i];
       ddq[j] = trajectory.a[j][i];

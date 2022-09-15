@@ -144,7 +144,7 @@ class Motion {
    * @return false when motion is not at a complete stop
    */
   inline bool isStopped(double threshold=1e-4) {
-    for (int i = 0; i < nb_modules_; i++) {
+    for (int i = 0; i < nb_modules_*2; i++) {
       if (std::abs(dq_[i]) > threshold ||
           std::abs(ddq_[i]) > threshold ||
           std::abs(dddq_[i]) > threshold) {
@@ -165,8 +165,8 @@ class Motion {
   inline bool hasSamePos(Motion* motion, double threshold=1e-3) {
     assert(motion->getNbModules() == nb_modules_);
     // Check if traj starts at the same position
-    for (int i = 0; i < nb_modules_; i++) {
-      if (std::abs(q_[i]-motion->getAngle()[i]) > threshold) {
+    for (int i = 0; i < nb_modules_*2; i++) {
+      if (std::abs(q_[i]-motion->getPos()[i]) > threshold) {
         return false;
       }
     }
@@ -184,7 +184,7 @@ class Motion {
   inline bool hasSameVel(Motion* motion, double threshold=1e-4) {
     assert(motion->getNbModules() == nb_modules_);
     // Check if traj starts at the same position
-    for (int i = 0; i < nb_modules_; i++) {
+    for (int i = 0; i < nb_modules_*2; i++) {
       if (std::abs(dq_[i]-motion->getVelocity()[i]) > threshold) {
         return false;
       }
@@ -203,7 +203,7 @@ class Motion {
   inline bool hasSameAcc(Motion* motion, double threshold=1e-4) {
     assert(motion->getNbModules() == nb_modules_);
     // Check if traj starts at the same position
-    for (int i = 0; i < nb_modules_; i++) {
+    for (int i = 0; i < nb_modules_*2; i++) {
       if (std::abs(ddq_[i]-motion->getAcceleration()[i]) > threshold) {
         return false;
       }
@@ -236,7 +236,7 @@ class Motion {
    *
    * @return the angle of the motion
    */
-  inline std::vector<double> getAngle() { return q_; }
+  inline std::vector<double> getPos() { return q_; }
   
   /**
    * @brief Returns the velocity of the motion
@@ -278,7 +278,7 @@ class Motion {
    *
    * @param new_q the new motion's angle
    */
-  inline void setAngle(const std::vector<double> &new_q) { q_ = new_q; }
+  inline void setPos(const std::vector<double> &new_q) { q_ = new_q; }
   
   /**
    * @brief Sets the velocity

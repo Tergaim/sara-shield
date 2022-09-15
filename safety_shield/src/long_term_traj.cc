@@ -16,7 +16,7 @@ Motion LongTermTraj::interpolate(double s, double ds, double dds, double ddds,
   int ind2 = static_cast<int>(ceil(ind));
   // time from first index to interpolation point
   double dt = ind_mod * sample_time_;
-  std::vector<double> q1 = getNextMotionAtIndex(ind1).getAngle();
+  std::vector<double> q1 = getNextMotionAtIndex(ind1).getPos();
   std::vector<double> dq1 = getNextMotionAtIndex(ind1).getVelocity();
   std::vector<double> ddq1 = getNextMotionAtIndex(ind1).getAcceleration();
   std::vector<double> dddq1 = getNextMotionAtIndex(ind1).getJerk();
@@ -44,7 +44,7 @@ void LongTermTraj::calculate_max_acc_jerk_window(std::vector<Motion> &long_term_
   int traj_length = long_term_traj.size();
   // It must be k <= trajectory length.
   k = std::min(traj_length, k);
-  int n_joints = long_term_traj[0].getAngle().size();
+  int n_joints = long_term_traj[0].getPos().size();
   max_acceleration_window_.reserve(traj_length);
   max_jerk_window_.reserve(traj_length);
 

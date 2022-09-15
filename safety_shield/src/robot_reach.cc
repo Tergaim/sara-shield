@@ -68,14 +68,14 @@ std::vector<reach_lib::Capsule> RobotReach::reach(Motion& start_config, Motion& 
     Eigen::Matrix4d T_before = transformation_matrices_[0];
     Eigen::Matrix4d T_after = transformation_matrices_[0];
     std::vector<reach_lib::Capsule> reach_capsules;
-    std::vector<double> q1 = start_config.getAngle();
-    std::vector<double> q2 = goal_config.getAngle();
+    std::vector<double> q1 = start_config.getPos();
+    std::vector<double> q2 = goal_config.getPos();
     for (int i = 0; i < nb_joints_; i++) { 
         // build capsule before
-        forwardKinematic(q1[i], i, T_before);
+        forwardKinematic(q1[2*i], q1[2*i+1], i, T_before);
         reach_lib::Capsule before = transformCapsule(i, T_before);
         // build capsule after
-        forwardKinematic(q2[i], i, T_after);
+        forwardKinematic(q2[2*i], q2[2*i+1], i, T_after);
         reach_lib::Capsule after = transformCapsule(i, T_after);
 
         // Caculate center of ball enclosing point p1 before and after
