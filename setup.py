@@ -148,11 +148,18 @@ class CMakeBuild(build_ext):
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
 
+        # subprocess.check_call(
+        #     ["cmake", "-DPYTHON_EXECUTABLE:FILEPATH="+os.environ["CONDA_PREFIX"]+"/bin/python",
+        #         "-DPYTHON_INCLUDE_DIR="+os.environ["CONDA_PREFIX"]+"/include/python3.8/",
+        #         "-DPYTHON_LIBRARY:FILEPATH="+os.environ["CONDA_PREFIX"]+"/lib/libpython3.8.so",
+        #         "-DEigen3_DIR="+os.environ["EIGEN3_INCLUDE_DIR"]+"/cmake/",
+        #         ext.sourcedir] + cmake_args, cwd=self.build_temp
+        # )
         subprocess.check_call(
-            ["cmake", "-DPYTHON_EXECUTABLE:FILEPATH="+os.environ["CONDA_PREFIX"]+"/bin/python",
-                "-DPYTHON_INCLUDE_DIR="+os.environ["CONDA_PREFIX"]+"/include/python3.8/",
-                "-DPYTHON_LIBRARY:FILEPATH="+os.environ["CONDA_PREFIX"]+"/lib/libpython3.8.so",
-                "-DEigen3_DIR="+os.environ["EIGEN3_INCLUDE_DIR"]+"/cmake/",
+            ["cmake", "-DPYTHON_EXECUTABLE:FILEPATH=/bin/python3",
+                "-DPYTHON_INCLUDE_DIR=/usr/include/python3.8/",
+                "-DPYTHON_LIBRARY:FILEPATH=/lib/libpython3.8.so",
+                "-DEigen3_DIR=/home/tergaim/workspace/Thesis/eigen-3.4.0/cmake/",
                 ext.sourcedir] + cmake_args, cwd=self.build_temp
         )
         subprocess.check_call(
