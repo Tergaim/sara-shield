@@ -75,19 +75,22 @@ PYBIND11_MODULE(safety_shield_py, handle) {
   // Safety shield class
   py::class_<safety_shield::SafetyShield>(handle, "SafetyShield")
     .def(py::init<>())
-    .def(py::init<bool, double, std::string, std::string, std::string, double, double, double, double, double, double, const std::vector<double>&>(),
+    .def(py::init<bool, double, std::string, std::string, double, double, double, double, double, double, const std::vector<double>&>(), std::vector<double>&>(), std::vector<double>&>(), std::vector<bool>&>(), double,
       py::arg("activate_shield"),
       py::arg("sample_time"),
       py::arg("trajectory_config_file"),
       py::arg("robot_config_file"),
-      py::arg("mocap_config_file"),
       py::arg("init_x"),
       py::arg("init_y"),
       py::arg("init_z"),
       py::arg("init_roll"),
       py::arg("init_pitch"),
       py::arg("init_yaw"),
-      py::arg("init_qpos"))
+      py::arg("init_qpos"),
+      py::arg("obstacle_pos"),
+      py::arg("obstacle_r"),
+      py::arg("obstacle_moves"),
+      py::arg("obstacle_vmax"))
     .def("reset", &safety_shield::SafetyShield::reset, 
       py::arg("activate_shield"),
       py::arg("init_x"),
@@ -101,9 +104,9 @@ PYBIND11_MODULE(safety_shield_py, handle) {
     .def("step", &safety_shield::SafetyShield::step, py::arg("cycle_begin_time"))
     .def("newLongTermTrajectory", &safety_shield::SafetyShield::newLongTermTrajectory, py::arg("goal_position"), py::arg("goal_velocity"))
     .def("setLongTermTrajectory", &safety_shield::SafetyShield::setLongTermTrajectory, py::arg("traj"))
-    .def("humanMeasurement", static_cast<void (safety_shield::SafetyShield::*)(const std::vector<std::vector<double>> human_measurement, double time)>(&safety_shield::SafetyShield::humanMeasurement), py::arg("human_measurement"), py::arg("time"))
-    .def("getRobotReachCapsules", &safety_shield::SafetyShield::getRobotReachCapsules)
-    .def("getHumanReachCapsules", &safety_shield::SafetyShield::getHumanReachCapsules, py::arg("type") = 1)
+    .def("obstacleMeasurement", static_cast<void (safety_shield::SafetyShield::*)(const std::vector<std::vector<double>> obstacle_measurements, double time)>(&safety_shield::SafetyShield::obstacleMeasurement), py::arg("obstacle_measurement"), py::arg("time"))
+    .def("getRobotReachCylinders", &safety_shield::SafetyShield::getRobotReachCylinders)
+    .def("getObstacleReachCylinders", &safety_shield::SafetyShield::getObstacleReachCylinders, py::arg("type") = 1)
     .def("getSafety", &safety_shield::SafetyShield::getSafety)
   ;
   

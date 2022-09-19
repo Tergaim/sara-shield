@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*/
 /**
- * @file human_reach.h
- * @brief Defines the human reach class
+ * @file obstacle_reach.h
+ * @brief Defines the obstacle reach class
  * @version 0.1
  * @copyright This file is part of SaRA-Shield.
  * SaRA-Shield is free software: you can redistribute it and/or modify it under 
@@ -26,18 +26,18 @@
 #include "reach_lib.hpp"
 
 
-#ifndef HUMAN_REACH_H
-#define HUMAN_REACH_H
+#ifndef OBSTACLE_REACH_H
+#define OBSTACLE_REACH_H
 
 namespace safety_shield {
 
 /**
- * @brief Class handling the reachability analysis of the human.
+ * @brief Class handling the reachability analysis of the obstacles.
  * 
- * This class holds all three articulated models (pos, vel, accel) of the human, 
+ * This class holds position pedestrian models for each obstacle, 
  * and handels incoming measurements.
  */
-class HumanReach {
+class ObstacleReach {
  private:
 
   /**
@@ -48,7 +48,7 @@ class HumanReach {
   /**
    * @brief Number of joint measurements.
    */
-  int n_joints_meas_;
+  int n_obstacles_;
 
   /**
    * @brief Joint position measurements
@@ -61,24 +61,9 @@ class HumanReach {
   std::vector<reach_lib::Point> joint_vel_;
 
   /**
-   * @brief Map the entries of body links to their proximal and distal joint.
-   */
-  std::map<std::string, reach_lib::jointPair> body_link_joints_;
-
-  /**
-   * @brief The object for calculating the position based reachable set.
-   */
-  reach_lib::ArticulatedPos human_p_;
-
-  /**
    * @brief The object for calculating the velocity based reachable set.
    */
-  reach_lib::ArticulatedVel human_v_;
-
-  /**
-   * @brief The object for calculating the acceleration based reachable set.
-   */
-  reach_lib::ArticulatedAccel human_a_;
+  std::vector<reach_lib::PedestrianVel> obstacle_p_;
 
   /**
    * @brief We need two measurements for velocity calculation.
@@ -107,31 +92,24 @@ public:
   /**
    * @brief Empty constructor
    */
-  HumanReach() {}
+  ObstacleReach() {}
 
   /**
-   * @brief HumanReach constructor
-   * @param[in] n_joints_meas Number of joints in the measurement
+   * @brief ObstacleReach constructor
+   * @param[in] n_obstacles Number of joints in the measurement
    * @param[in] measurement_error_pos Maximal positional measurement error
    * @param[in] measurement_error_vel Maximal velocity measurement error
    * @param[in] delay Delay in measurement processing pipeline
-   * @param[in] joint_pair_map Maps the proximal and distal joint to a body part identified by a string (key: Name of body part, value: Proximal and distal joint index)
-   * @param[in] thickness Defines the thickness of the body parts (key: Name of body part, value: Thickness of body part)
+   * @param[in] radius Defines the thickness of the obstacle
+   * @param[in] pos Defines the initial position (2D coords) of the obstacle
+   * @param[in] moves Defines if the obstacle is static
    * @param[in] max_v The maximum velocity of the joints
-   * @param[in] max_a The maximum acceleration of the joints
-   * @param[in] extremity_base_names The base joints of extremities, e.g., right / left shoulder, right / left hip socket
-   * @param[in] extremity_end_names The end joints of extremities, e.g., right / left hand, right / left foot --> Is used for thickness of extremities
-   * @param[in] extremity_length The max length of the extremities (related to extremity_base_names)
-   * @param[in] wrist_names The name identifiers of the two hands
   */
-  HumanReach(int n_joints_meas, 
-      std::map<std::string, reach_lib::jointPair>& body_link_joints, 
-      const std::map<std::string, double>& thickness, 
-      std::vector<double>& max_v, 
-      std::vector<double>& max_a,
-      std::vector<std::string>& extremity_base_names, 
-      std::vector<std::string>& extremity_end_names, 
-      std::vector<double>& extremity_length, 
+  ObstacleReach(int n_obstacles, 
+      std::vector<double>& pos, 
+      std::vector<double>& radius, 
+      std::vector<bool>& moves, 
+      double max_v,
       double measurement_error_pos, 
       double measurement_error_vel, 
       double delay);
@@ -139,61 +117,38 @@ public:
   /**
    * @brief Destructor
    */
-  ~HumanReach() {}
+  ~ObstacleReach() {}
 
   /**
-   * @brief Reset the human reach object.
+   * @brief Reset the obstacle reach object.
    * 
    */
   void reset();
 
   /**
    * @brief Update the joint measurements.
-   * @param[in] human_joint_pos The positions of the human joints.
+   * @param[in] obstacle_pos The positions of the obstacles.
    * @param[in] time The simulation time.
    */
-  void measurement(const std::vector<reach_lib::Point>& human_joint_pos, double time);
+  void measurement(const std::vector<reach_lib::Point>& obstacle_pos, double time);
 
   /**
    * @brief Calculate reachability analysis for given breaking time.
    * 
-   * Updates the values in human_p_, human_v_, human_a_.
+   * Updates the values in obstacle_p_.
    * Get the values afterwards with the getter functions!
    * 
    * @param[in] t_command Current time
    * @param[in] t_brake Time horizon of reachability analysis
    */
-  void humanReachabilityAnalysis(double t_command, double t_brake);
+  void obstacleReachabilityAnalysis(double t_command, double t_brake);
 
   /**
-   * @brief Get the Articulated Pos capsules
+   * @brief Get the Articulated Pos cylinders
    * 
-   * @return reach_lib::ArticulatedPos capsules
+   * @return reach_lib::PedestrianVel cylinders
    */
-  inline std::vector<reach_lib::Capsule> getArticulatedPosCapsules() {return reach_lib::get_capsules(human_p_);}
-
-  /**
-   * @brief Get the Articulated Vel capsules
-   * 
-   * @return reach_lib::ArticulatedVel capsules
-   */
-  inline std::vector<reach_lib::Capsule> getArticulatedVelCapsules() {return reach_lib::get_capsules(human_v_);}
-
-  /**
-   * @brief Get the Articulated Accel capsules
-   * 
-   * @return reach_lib::ArticulatedAccel capsules
-   */
-  inline std::vector<reach_lib::Capsule> getArticulatedAccelCapsules() {return reach_lib::get_capsules(human_a_);}
-
-  /**
-   * @brief Get the All Capsules of pos, vel, and accel
-   * 
-   * @return std::vector<std::vector<reach_lib::Capsule>> 
-   */
-  inline std::vector<std::vector<reach_lib::Capsule>> getAllCapsules() {
-    return {getArticulatedPosCapsules(), getArticulatedVelCapsules(), getArticulatedAccelCapsules()};
-  }
+  inline std::vector<reach_lib::Cylinder> getPosCylinder() {return reach_lib::get_cylinders(obstacle_p_);}
 
   /**
    * @brief Get the Last Meas Timestep object
@@ -220,15 +175,6 @@ public:
    */
   inline std::vector<reach_lib::Point> getJointVel() {
     return joint_vel_;
-  }
-  
-  /**
-   * @brief Get the Body Link Joints object
-   * 
-   * @return std::map<std::string, reach_lib::jointPair> 
-   */
-  inline std::map<std::string, reach_lib::jointPair> getBodyLinkJoints() {
-    return body_link_joints_;
   }
 
   /**
@@ -259,4 +205,4 @@ public:
   }
 };
 } // namespace safety_shield
-#endif // HUMAN_REACH_H
+#endif // OBSTACLE_REACH_H

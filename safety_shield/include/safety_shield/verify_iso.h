@@ -29,7 +29,7 @@
 namespace safety_shield {
 
 /**
- * @brief Verifies if a given robot motion is safe with respect to a humans motion
+ * @brief Verifies if a given robot motion is safe with respect to obstacle motions
  */
 class VerifyISO : public Verify {
  public:
@@ -39,27 +39,27 @@ class VerifyISO : public Verify {
   VerifyISO() : Verify() {}
 
   /**
-   * @brief Check a set of robot capsules if they collide with a set of human capsules
+   * @brief Check a set of robot cylinder if they collide with a set of obstacle cylinder
    * 
-   * @param[in] robot_capsules The robot capsules
-   * @param[in] human_capsules The human occupancy capsules
+   * @param[in] robot_cylinder The robot cylinder
+   * @param[in] obstacle_cylinder The obstacle occupancy cylinder
    * 
-   * @returns Whether a collision between any two capsules of the robot and human set occured
+   * @returns Whether a collision between any two cylinder of the robot and obstacle set occured
    */
-  bool robotHumanCollision(const std::vector<reach_lib::Capsule>& robot_capsules, 
-      const std::vector<reach_lib::Capsule>& human_capsules);
+  bool robotObstacleCollision(const std::vector<reach_lib::Cylinder>& robot_cylinder, 
+      const std::vector<reach_lib::Cylinder>& obstacle_cylinder);
 
   /**
-   * @brief Verify the robot motion againt the reachability analysis of the human in position, velocity, and acceleration
+   * @brief Verify the robot motion againt the reachability analysis of the obstacle in position, velocity, and acceleration
    * 
-   * @param[in] robot_capsules Reachable capsules of the robot
-   * @param[in] human_capsules List of list of capsules. Each list of capsules corresponds to a human reachable set model.
+   * @param[in] robot_cylinder Reachable cylinder of the robot
+   * @param[in] obstacle_cylinder List of list of cylinder. Each list of cylinder corresponds to a obstacle reachable set model.
    * 
-   * @returns True: if the robot capsules do not collide with one set of the human capsules, i.e., the motion is safe. 
+   * @returns True: if the robot cylinder do not collide with one set of the obstacle cylinder, i.e., the motion is safe. 
    *          False: Otherwise
    */
-  bool verify_human_reach(const std::vector<reach_lib::Capsule>& robot_capsules, 
-      std::vector<std::vector<reach_lib::Capsule>> human_capsules);
+  bool verify_obstacle_reach(const std::vector<reach_lib::Cylinder>& robot_cylinder, 
+      std::vector<std::vector<reach_lib::Cylinder>> obstacle_cylinder);
 };
 } // namespace safety_shield
 

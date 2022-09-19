@@ -34,7 +34,7 @@
 #include "safety_shield/path.h"
 #include "safety_shield/motion.h"
 #include "safety_shield/robot_reach.h"
-#include "safety_shield/human_reach.h"
+#include "safety_shield/obstacle_reach.h"
 #include "safety_shield/verify.h"
 #include "safety_shield/verify_iso.h"
 #include "safety_shield/exceptions.h"
@@ -57,15 +57,15 @@ class SafetyShield {
   RobotReach* robot_reach_;
 
   /**
-   * @brief Human reachable set calcualtion object
+   * @brief Obstacle reachable set calcualtion object
    * 
    */
-  HumanReach* human_reach_;
+  ObstacleReach* obstacle_reach_;
 
   /**
    * @brief Verifier object
    *  
-   * Takes the robot and human capsules as input and checks them for collision.
+   * Takes the robot and obstacle cylinders as input and checks them for collision.
    */
   Verify* verify_;
 
@@ -251,16 +251,16 @@ class SafetyShield {
    */
   double cycle_begin_time_;
 
-  //////// Reachable sets of human and robot //////
+  //////// Reachable sets of obstacles and robot //////
   /**
-   * @brief Vector of robot reachable set capsules (get updated in every step()).
+   * @brief Vector of robot reachable set cylinders (get updated in every step()).
    */
-  std::vector<reach_lib::Capsule> robot_capsules_;
+  std::vector<reach_lib::Cylinder> robot_cylinders_;
 
   /**
-   * @brief Vector of human reachable set capsules (get updated in every step()).
+   * @brief Vector of obstacle reachable set cylinders (get updated in every step()).
    */
-  std::vector<std::vector<reach_lib::Capsule>> human_capsules_;
+  std::vector<std::vector<reach_lib::Cylinder>> obstacle_cylinders_;
 
   //////// For replanning new trajectory //////
   /**
@@ -343,24 +343,24 @@ protected:
       const std::vector<double>& goal_q, LongTermTraj& ltt);
 
   /**
-   * @brief Convert a capsule to a vector containing [p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, r]
+   * @brief Convert a cylinder to a vector containing [p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, r]
    * p1: Center point of half sphere 1
    * p2: Center point of half sphere 2
    * r: Radius of half spheres and cylinder
    * 
-   * @param cap Capsule
+   * @param cap Cylinder
    * @return std::vector<double> 
    */
-  inline std::vector<double> convertCapsule(const reach_lib::Capsule& cap) {
-    std::vector<double> capsule(7);
-    capsule[0] = cap.p1_.x;
-    capsule[1] = cap.p1_.y;
-    capsule[2] = cap.p1_.z;
-    capsule[3] = cap.p2_.x;
-    capsule[4] = cap.p2_.y;
-    capsule[5] = cap.p2_.z;
-    capsule[6] = cap.r_;
-    return capsule;
+  inline std::vector<double> convertCylinder(const reach_lib::Cylinder& cap) {
+    std::vector<double> cylinder(7);
+    cylinder[0] = cap.p1_.x;
+    cylinder[1] = cap.p1_.y;
+    cylinder[2] = cap.p1_.z;
+    cylinder[3] = cap.p2_.x;
+    cylinder[4] = cap.p2_.y;
+    cylinder[5] = cap.p2_.z;
+    cylinder[6] = cap.r_;
+    return cylinder;
   }
  
  public:
@@ -385,7 +385,7 @@ protected:
    * @param long_term_trajectory Fixed trajectory to execute (will be overwritten by new intended goals)
    *    This also defines the initial qpos.
    * @param robot_reach Robot reachable set calculation object
-   * @param human_reach Human reachable set calculation object
+   * @param obstacle_reach Obstacle reachable set calculation object
    * @param verify Verification of reachable sets object
    */
   SafetyShield(bool activate_shield,
@@ -399,7 +399,7 @@ protected:
       const std::vector<double> &j_max_path, 
       const LongTermTraj &long_term_trajectory, 
       RobotReach* robot_reach,
-      HumanReach* human_reach,
+      ObstacleReach* obstacle_reach,
       Verify* verify);
 
   /**
@@ -408,8 +408,7 @@ protected:
    * @param activate_shield If the safety function should be active or not.
    * @param sample_time Sample time of shield
    * @param trajectory_config_file Path to config file defining the trajectory parameters
-   * @param robot_config_file Path to config file defining the robot transformation matrices and capsules
-   * @param mocap_config_file Path to config file defining the human motion capture
+   * @param robot_config_file Path to config file defining the robot transformation matrices and cylinders
    * @param init_x Base x pos
    * @param init_y Base y pos
    * @param init_z Base z pos 
@@ -417,19 +416,26 @@ protected:
    * @param init_pitch Base pitch
    * @param init_yaw Base yaw
    * @param init_qpos Initial joint position of the robot
+   * @param obstacle_pos initial obstacle position
+   * @param obstacle_r obstacle radius
+   * @param obstacle_moves defines if obstacle static or not
+   * @param obstacle_vmax defines max obstacle velocity (for non static)
    */
   explicit SafetyShield(bool activate_shield,
       double sample_time,
       std::string trajectory_config_file,
       std::string robot_config_file,
-      std::string mocap_config_file,
       double init_x, 
       double init_y, 
       double init_z, 
       double init_roll, 
       double init_pitch, 
       double init_yaw,
-      const std::vector<double> &init_qpos);
+      const std::vector<double> &init_qpos,
+      std::vector<double> &obstacle_pos,
+      std::vector<double> &obstacle_r,
+      std::vector<bool> &obstacle_moves,
+      double obstacle_vmax);
 
   /**
    * @brief A SafetyShield destructor
@@ -499,62 +505,62 @@ protected:
   void setLongTermTrajectory(LongTermTraj& traj);
 
   /**
-   * @brief Receive a new human measurement
-   * @param[in] human_measurement A vector of human joint measurements (list of reach_lib::Points)
+   * @brief Receive a new obstacle measurement
+   * @param[in] obstacle_measurement A vector of obstacle joint measurements (list of reach_lib::Points)
    * @param[in] time The timestep of the measurement in seconds.
    */
-  inline void humanMeasurement(const std::vector<reach_lib::Point> human_measurement, double time) {
-    human_reach_->measurement(human_measurement, time);
+  inline void obstacleMeasurement(const std::vector<reach_lib::Point> obstacle_measurement, double time) {
+    obstacle_reach_->measurement(obstacle_measurement, time);
   }
 
   /**
-   * @brief Receive a new human measurement. 
-   * Calls humanMeasurement(const std::vector<reach_lib::Point> human_measurement, double time).
-   * @param[in] human_measurement A vector of human joint measurements (list of list of doubles [x, y, z])
+   * @brief Receive a new obstacle measurement. 
+   * Calls obstacleMeasurement(const std::vector<reach_lib::Point> obstacle_measurement, double time).
+   * @param[in] obstacle_measurement A vector of obstacle joint measurements (list of list of doubles [x, y, z])
    * @param[in] time The timestep of the measurement in seconds.
    */
-  inline void humanMeasurement(const std::vector<std::vector<double>> human_measurement, double time) {
-    assert(human_measurement.size() > 0);
+  inline void obstacleMeasurement(const std::vector<std::vector<double>> obstacle_measurement, double time) {
+    assert(obstacle_measurement.size() > 0);
     std::vector<reach_lib::Point> converted_vec;
-    for(int i = 0; i < human_measurement.size(); i++) {
-      converted_vec.push_back(reach_lib::Point(human_measurement[i][0], human_measurement[i][1], human_measurement[i][2]));
+    for(int i = 0; i < obstacle_measurement.size(); i++) {
+      converted_vec.push_back(reach_lib::Point(obstacle_measurement[i][0], obstacle_measurement[i][1], obstacle_measurement[i][2]));
     }
-    humanMeasurement(converted_vec, time);
+    obstacleMeasurement(converted_vec, time);
   }
 
   /**
-   * @brief Get the Robot Reach Capsules as a vector of [p1[0:3], p2[0:3], r]
+   * @brief Get the Robot Reach Cylinders as a vector of [p1[0:3], p2[0:3], r]
    * p1: Center point of half sphere 1
    * p2: Center point of half sphere 2
    * r: Radius of half spheres and cylinder
    * 
-   * @return std::vector<std::vector<double>> Capsules
+   * @return std::vector<std::vector<double>> Cylinders
    */
-  inline std::vector<std::vector<double>> getRobotReachCapsules() {
-    std::vector<std::vector<double>> capsules( robot_capsules_.size() , std::vector<double> (7));
-    for (int i = 0; i < robot_capsules_.size(); i++) {
-      capsules[i] = convertCapsule(robot_capsules_[i]);
+  inline std::vector<std::vector<double>> getRobotReachCylinders() {
+    std::vector<std::vector<double>> cylinders( robot_cylinders_.size() , std::vector<double> (7));
+    for (int i = 0; i < robot_cylinders_.size(); i++) {
+      cylinders[i] = convertCylinder(robot_cylinders_[i]);
     }
-    return capsules;
+    return cylinders;
   }
 
   /**
-   * @brief Get the Human Reach Capsules as a vector of [p1[0:3], p2[0:3], r]
+   * @brief Get the Obstacle Reach Cylinders as a vector of [p1[0:3], p2[0:3], r]
    * p1: Center point of half sphere 1
    * p2: Center point of half sphere 2
    * r: Radius of half spheres and cylinder
    * 
-   * @param type Type of capsule. Select 0 for POS, 1 for VEL, and 2 for ACCEL
+   * @param type Type of cylinder. Select 0 for POS, 1 for VEL, and 2 for ACCEL
    * 
-   * @return std::vector<std::vector<double>> Capsules
+   * @return std::vector<std::vector<double>> Cylinders
    */
-  inline std::vector<std::vector<double>> getHumanReachCapsules(int type=1) {
-    assert(type >= 0 && type <= human_capsules_.size());
-    std::vector<std::vector<double>> capsules( human_capsules_[type].size() , std::vector<double> (7));
-    for (int i = 0; i < human_capsules_[type].size(); i++) {
-      capsules[i] = convertCapsule(human_capsules_[type][i]);
+  inline std::vector<std::vector<double>> ObstacleReachCylinders(int type=1) {
+    assert(type >= 0 && type <= obstacle_cylinders_.size());
+    std::vector<std::vector<double>> cylinders( obstacle_cylinders_[type].size() , std::vector<double> (7));
+    for (int i = 0; i < obstacle_cylinders_[type].size(); i++) {
+      cylinders[i] = convertCylinder(obstacle_cylinders_[type][i]);
     }
-    return capsules;
+    return cylinders;
   }
 
   inline bool getSafety() {

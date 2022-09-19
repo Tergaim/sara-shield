@@ -41,7 +41,7 @@ class RobotReach {
   int nb_joints_;
 
   /**
-   * @brief Expands the radius of the robot capsules by this amount to
+   * @brief Expands the radius of the robot cylinder by this amount to
    *  account for measurement and modelling errors.
    */
   double secure_radius_;
@@ -52,9 +52,9 @@ class RobotReach {
   std::vector<Eigen::Matrix4d> transformation_matrices_;
 
   /**
-   * @brief The enclosing capsules 
+   * @brief The enclosing cylinder 
    */
-  std::vector<reach_lib::Capsule> robot_capsules_;
+  std::vector<reach_lib::Cylinder> robot_cylinder_;
 
 public:
 
@@ -75,7 +75,7 @@ public:
    * @param roll initial roll of base
    * @param pitch initial pitch of base
    * @param yaw initial yaw of base
-   * @param secure_radius Expand the radius of the robot capsules by this amount to
+   * @param secure_radius Expand the radius of the robot cylinder by this amount to
    *  account for measurement and modelling errors.
    */
   RobotReach(std::vector<double> transformation_matrices, 
@@ -132,25 +132,25 @@ public:
   }
 
   /**
-   * @brief Transform the capsule of joint n by the transformation matrix T.
-   * @return the transformed capsule
+   * @brief Transform the cylinder of joint n by the transformation matrix T.
+   * @return the transformed cylinder
    */
-  reach_lib::Capsule transformCapsule(const int& n_joint, const Eigen::Matrix4d &T);
+  reach_lib::Cylinder transformCylinder(const int& n_joint, const Eigen::Matrix4d &T);
 
   /**
    * @brief Calculates the reachable set from the new desired start and goal joint position.
    * 
-   * Computes the reachable occupancy capsules of the robot.
+   * Computes the reachable occupancy cylinder of the robot.
    * For a detailed proof of formality, please see: http://mediatum.ub.tum.de/doc/1443612/652879.pdf Chapter 3.4
    * 
    * @param[in] start_config The configuration of the robot in the beginning of the trajectory
    * @param[in] goal_config The configuration of the robot in the end of the trajectory
    * @param[in] s_diff The difference in the trajectory time parameter s for the given path
-   * @param[in] alpha_i The maximum acceleration of each capsule point with resprect to the time parameter s for the given path
+   * @param[in] alpha_i The maximum acceleration of each cylinder point with resprect to the time parameter s for the given path
    * 
-   * @returns Array of capsules
+   * @returns Array of cylinder
    */
-  std::vector<reach_lib::Capsule> reach(Motion& start_config, Motion& goal_config,
+  std::vector<reach_lib::Cylinder> reach(Motion& start_config, Motion& goal_config,
     double s_diff, std::vector<double> alpha_i);
 };
 } // namespace safety_shield 

@@ -25,7 +25,7 @@ SafetyShield::SafetyShield(bool activate_shield,
       const std::vector<double> &j_max_path, 
       const LongTermTraj &long_term_trajectory, 
       RobotReach* robot_reach,
-      HumanReach* human_reach,
+      ObstacleReach* obstacle_reach,
       Verify* verify):
   activate_shield_(activate_shield),
   nb_joints_(nb_joints),
@@ -40,7 +40,7 @@ SafetyShield::SafetyShield(bool activate_shield,
   path_s_discrete_(0),
   long_term_trajectory_(long_term_trajectory),
   robot_reach_(robot_reach),
-  human_reach_(human_reach),
+  obstacle_reach_(obstacle_reach),
   verify_(verify)
 {
   sliding_window_k_ = (int) std::floor(max_s_stop_/sample_time_);
@@ -64,14 +64,17 @@ SafetyShield::SafetyShield(bool activate_shield,
       double sample_time,
       std::string trajectory_config_file,
       std::string robot_config_file,
-      std::string mocap_config_file,
       double init_x, 
       double init_y, 
       double init_z, 
       double init_roll, 
       double init_pitch, 
       double init_yaw,
-      const std::vector<double> &init_qpos):
+      const std::vector<double> &init_qpos,
+      std::vector<double> &obstacle_pos,
+      std::vector<double> &obstacle_r,
+      std::vector<bool> &obstacle_moves,
+      double obstacle_vmax):
     activate_shield_(activate_shield),
     sample_time_(sample_time),
     path_s_(0),
@@ -105,48 +108,16 @@ SafetyShield::SafetyShield(bool activate_shield,
     std::vector<Motion> long_term_traj;
     long_term_traj.push_back(Motion(0.0, init_qpos));
     long_term_trajectory_ = LongTermTraj(long_term_traj, sample_time_);
-    //////////// Build human reach
-    YAML::Node human_config = YAML::LoadFile(mocap_config_file);
-    double measurement_error_pos = human_config["measurement_error_pos"].as<double>();
-    double measurement_error_vel = human_config["measurement_error_vel"].as<double>();
-    double delay = human_config["delay"].as<double>();
+    //////////// Build obstacle reach
+    double measurement_error_pos = 0.0;
+    double measurement_error_vel = 0.0;
+    double delay = 0.0;
 
-    std::vector<std::string> joint_name_vec = human_config["joint_names"].as<std::vector<std::string>>();
-    std::map<std::string, int> joint_names;
-    for(std::size_t i = 0; i < joint_name_vec.size(); ++i) {
-        joint_names[joint_name_vec[i]] = i;
-    }
-
-    std::vector<double> joint_v_max = human_config["joint_v_max"].as<std::vector<double>>();
-    std::vector<double> joint_a_max = human_config["joint_a_max"].as<std::vector<double>>();
-    // Build bodies
-    const YAML::Node& bodies = human_config["bodies"];
-    std::map<std::string, reach_lib::jointPair> body_link_joints;
-    std::map<std::string, double> thickness;
-    for (YAML::const_iterator it = bodies.begin(); it != bodies.end(); ++it) {
-      const YAML::Node& body = *it;
-      body_link_joints[body["name"].as<std::string>()] = reach_lib::jointPair(joint_names[body["proximal"].as<std::string>()], joint_names[body["distal"].as<std::string>()]);
-      thickness[body["name"].as<std::string>()] = body["thickness"].as<double>(); 
-    }
-    // Build extremities
-    const YAML::Node& extremities = human_config["extremities"];
-    std::vector<std::string> extremity_base_names;
-    std::vector<std::string> extremity_end_names; 
-    std::vector<double> extremity_length;
-    for (YAML::const_iterator it = extremities.begin(); it != extremities.end(); ++it) {
-      const YAML::Node& extremity = *it;
-      extremity_base_names.push_back(extremity["base"].as<std::string>());
-      extremity_end_names.push_back(extremity["end"].as<std::string>());
-      extremity_length.push_back(extremity["length"].as<double>());
-    }
-    human_reach_ = new HumanReach(joint_names.size(), 
-      body_link_joints, 
-      thickness, 
-      joint_v_max, 
-      joint_a_max,
-      extremity_base_names, 
-      extremity_end_names, 
-      extremity_length,
+    obstacle_reach_ = new ObstacleReach(obstacle_moves.size(), 
+      obstacle_pos, 
+      obstacle_r, 
+      obstacle_moves,
+      obstacle_vmax,
       measurement_error_pos, 
       measurement_error_vel, 
       delay);
@@ -176,7 +147,7 @@ void SafetyShield::reset(bool activate_shield,
       const std::vector<double> &init_qpos,
       double current_time) {
   robot_reach_->reset(init_x, init_y, init_z, init_roll, init_pitch, init_yaw);
-  human_reach_->reset();
+  obstacle_reach_->reset();
   std::vector<double> prev_dq;
   for(int i = 0; i < 6; i++) {
       prev_dq.push_back(0.0);
@@ -562,13 +533,13 @@ Motion SafetyShield::step(double cycle_begin_time) {
         is_safe_ = false;
       } else {
         // Compute the robot reachable set for the potential trajectory
-        robot_capsules_ = robot_reach_->reach(current_motion, goal_motion, (goal_motion.getS()-current_motion.getS()), alpha_i_);
-        // Compute the human reachable sets for the potential trajectory
-        // humanReachabilityAnalysis(t_command, t_brake)
-        human_reach_->humanReachabilityAnalysis(cycle_begin_time_, goal_motion.getTime());
-        human_capsules_ = human_reach_->getAllCapsules();
-        // Verify if the robot and human reachable sets are collision free
-        is_safe_ = verify_->verify_human_reach(robot_capsules_, human_capsules_);
+        robot_cylinders_ = robot_reach_->reach(current_motion, goal_motion, (goal_motion.getS()-current_motion.getS()), alpha_i_);
+        // Compute the obstacle reachable sets for the potential trajectory
+        // obstacleReachabilityAnalysis(t_command, t_brake)
+        obstacle_reach_->obstacleReachabilityAnalysis(cycle_begin_time_, goal_motion.getTime());
+        obstacle_cylinders_ = obstacle_reach_->getPosCylinder();
+        // Verify if the robot and obstacle reachable sets are collision free
+        is_safe_ = verify_->verify_obstacle_reach(robot_cylinders_, obstacle_cylinders_);
       }
     } else {
       is_safe_ = true;
