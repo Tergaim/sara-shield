@@ -75,7 +75,7 @@ PYBIND11_MODULE(safety_shield_py, handle) {
   // Safety shield class
   py::class_<safety_shield::SafetyShield>(handle, "SafetyShield")
     .def(py::init<>())
-    .def(py::init<bool, double, std::string, std::string, double, double, double, double, double, double, const std::vector<double>&>(), std::vector<double>&>(), std::vector<double>&>(), std::vector<bool>&>(), double,
+    .def(py::init<bool, double, std::string, std::string, double, double, double, double, double, double, const std::vector<double>&, std::vector<double>&, std::vector<double>&, std::vector<bool>&, double>(),
       py::arg("activate_shield"),
       py::arg("sample_time"),
       py::arg("trajectory_config_file"),
@@ -106,7 +106,7 @@ PYBIND11_MODULE(safety_shield_py, handle) {
     .def("setLongTermTrajectory", &safety_shield::SafetyShield::setLongTermTrajectory, py::arg("traj"))
     .def("obstacleMeasurement", static_cast<void (safety_shield::SafetyShield::*)(const std::vector<std::vector<double>> obstacle_measurements, double time)>(&safety_shield::SafetyShield::obstacleMeasurement), py::arg("obstacle_measurement"), py::arg("time"))
     .def("getRobotReachCylinders", &safety_shield::SafetyShield::getRobotReachCylinders)
-    .def("getObstacleReachCylinders", &safety_shield::SafetyShield::getObstacleReachCylinders, py::arg("type") = 1)
+    .def("getObstacleReachCylinders", &safety_shield::SafetyShield::getObstacleReachCylinders)
     .def("getSafety", &safety_shield::SafetyShield::getSafety)
   ;
   

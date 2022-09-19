@@ -57,7 +57,7 @@ class Verify {
    * @returns Whether the robot movement is unsafe for the obstacle
    */
   virtual bool verify_obstacle_reach(const std::vector<reach_lib::Cylinder>& robot_cylinder, 
-      std::vector<std::vector<reach_lib::Cylinder>> obstacle_cylinder) = 0;
+      std::vector<reach_lib::Cylinder> obstacle_cylinder) = 0;
 };
 } // namespace safety_shield
 

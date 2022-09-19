@@ -54,7 +54,7 @@ class RobotReach {
   /**
    * @brief The enclosing cylinder 
    */
-  std::vector<reach_lib::Cylinder> robot_cylinder_;
+  std::vector<reach_lib::Cylinder> robot_cylinders_;
 
 public:
 
@@ -78,12 +78,9 @@ public:
    * @param secure_radius Expand the radius of the robot cylinder by this amount to
    *  account for measurement and modelling errors.
    */
-  RobotReach(std::vector<double> transformation_matrices, 
-      int nb_joints, 
-      std::vector<double> geom_par, 
-      double x, double y, double z, 
+  RobotReach(double x, double y, double z, 
       double roll, double pitch, double yaw,
-      double secure_radius);
+      double radius, double secure_radius);
 
   /**
    *  @brief A robot destructor

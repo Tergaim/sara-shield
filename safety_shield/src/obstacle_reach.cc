@@ -57,7 +57,7 @@ void ObstacleReach::obstacleReachabilityAnalysis(double t_command, double t_brak
     double t_reach = t_command-last_meas_timestep_ + t_brake;
     // Calculate reachable set
     for(int i=0; i < obstacle_p_.size(); i++)
-      obstacle_p_[i].update(0.0, t_reach, joint_pos_[i], joint_vel_[i]);
+      obstacle_p_[i].update(0.0, t_reach, {joint_pos_[i]}, {joint_vel_[i]});
   } catch (const std::exception &exc) {
       spdlog::error("Exception in ObstacleReach::obstacleReachabilityAnalysis: {}", exc.what());
   }

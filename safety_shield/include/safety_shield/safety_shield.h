@@ -260,7 +260,7 @@ class SafetyShield {
   /**
    * @brief Vector of obstacle reachable set cylinders (get updated in every step()).
    */
-  std::vector<std::vector<reach_lib::Cylinder>> obstacle_cylinders_;
+  std::vector<reach_lib::Cylinder> obstacle_cylinders_;
 
   //////// For replanning new trajectory //////
   /**
@@ -554,11 +554,10 @@ protected:
    * 
    * @return std::vector<std::vector<double>> Cylinders
    */
-  inline std::vector<std::vector<double>> ObstacleReachCylinders(int type=1) {
-    assert(type >= 0 && type <= obstacle_cylinders_.size());
-    std::vector<std::vector<double>> cylinders( obstacle_cylinders_[type].size() , std::vector<double> (7));
-    for (int i = 0; i < obstacle_cylinders_[type].size(); i++) {
-      cylinders[i] = convertCylinder(obstacle_cylinders_[type][i]);
+  inline std::vector<std::vector<double>> getObstacleReachCylinders() {
+    std::vector<std::vector<double>> cylinders( obstacle_cylinders_.size() , std::vector<double> (7));
+    for (int i = 0; i < obstacle_cylinders_.size(); i++) {
+      cylinders[i] = convertCylinder(obstacle_cylinders_[i]);
     }
     return cylinders;
   }

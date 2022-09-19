@@ -59,7 +59,7 @@ class VerifyISO : public Verify {
    *          False: Otherwise
    */
   bool verify_obstacle_reach(const std::vector<reach_lib::Cylinder>& robot_cylinder, 
-      std::vector<std::vector<reach_lib::Cylinder>> obstacle_cylinder);
+      std::vector<reach_lib::Cylinder> obstacle_cylinder);
 };
 } // namespace safety_shield
 
