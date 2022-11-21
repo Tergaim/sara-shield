@@ -4,6 +4,7 @@ namespace safety_shield
 {
 
   RobotReach::RobotReach(double x = 0, double y = 0, double z = 0, double roll = 0, double pitch = 0, double yaw = 0, double radius = 0.5, double secure_radius = 0.0) : nb_joints_(1),
+                                                                                                                                                                         radius_robot_(radius),
                                                                                                                                                                          secure_radius_(secure_radius)
   {
     Eigen::Matrix4d transformation_matrix;
@@ -70,7 +71,9 @@ namespace safety_shield
       Eigen::Matrix4d T_after = transformation_matrices_[0];
       std::vector<reach_lib::Cylinder> reach_cylinders;
       std::vector<double> q1 = start_config.getPos();
+      std::cout<<"pos begin : "<< q1[0]<< " , " << q1[1] <<std::endl;
       std::vector<double> q2 = goal_config.getPos();
+      std::cout<<"pos end : "<< q2[0]<< " , " << q2[1] <<std::endl;
       for (int i = 0; i < nb_joints_; i++)
       {
         // build cylinder before
@@ -94,6 +97,32 @@ namespace safety_shield
         reach_cylinders.push_back(reach_lib::Cylinder(p_1_k, p_2_k, radius));
       }
       return reach_cylinders;
+    }
+    catch (const std::exception &exc)
+    {
+      spdlog::error("Exception in RobotReach::reach: {}", exc.what());
+      return {};
+    }
+  }
+
+  std::vector<reach_lib::Capsule> RobotReach::reach_path(std::vector<Motion> path, int start_on_path)
+  {
+    try
+    {
+      std::vector<reach_lib::Capsule> reach_capsules;
+      reach_capsules.reserve(path.size()-start_on_path-1);
+      for (int i = start_on_path; i < path.size()-1; i++)
+      {
+        // build cylinder
+        std::vector<double> p1 = path[i].getPos();
+        reach_lib::Point p_1_k = reach_lib::Point(p1[0], p1[1], 0);
+        // Caculate center of ball enclosing point p2 before and after
+        std::vector<double> p2 = path[i+1].getPos();
+        reach_lib::Point p_2_k = reach_lib::Point(p2[0], p2[1], 0);
+        double radius = radius_robot_ + secure_radius_;
+        reach_capsules.push_back(reach_lib::Capsule(p_1_k, p_2_k, radius));
+      }
+      return reach_capsules;
     }
     catch (const std::exception &exc)
     {

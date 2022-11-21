@@ -45,6 +45,7 @@ class RobotReach {
    *  account for measurement and modelling errors.
    */
   double secure_radius_;
+  double radius_robot_;
 
   /**
    * @brief List of transforamtion matrices from joint to joint (fixed description, not including joint movements)
@@ -149,6 +150,9 @@ public:
    */
   std::vector<reach_lib::Cylinder> reach(Motion& start_config, Motion& goal_config,
     double s_diff, std::vector<double> alpha_i);
+
+  std::vector<reach_lib::Capsule> reach_path(std::vector<Motion> path, int start_on_path);
+
 };
 } // namespace safety_shield 
 

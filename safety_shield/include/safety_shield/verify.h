@@ -45,19 +45,23 @@ class Verify {
   inline bool cylinderCollisionCheck(const reach_lib::Cylinder& cap1, const reach_lib::Cylinder& cap2) {
     return reach_lib::intersections::cylinder_cylinder_intersection(cap2, cap1);
   }
+
+  inline bool cylinderCapsuleCollisionCheck(const reach_lib::Cylinder& cyl1, const reach_lib::Capsule& cap2) {
+    return reach_lib::intersections::cylinder_capsule_intersection(cyl1, cap2);
+  }
   
   /**
    * @brief Verify the robot motion against the reachable occupancy of the obstacle in position, velocity, and acceleration
    * 
    * Pure virtual function.
    * 
-   * @param[in] robot_cylinder Reachable cylinder of the robot
+   * @param[in] robot_capsules Reachable capsules of the robot
    * @param[in] obstacle_cylinder List of list of cylinder. Each list of cylinder corresponds to a obstacle reachable set model.
    * 
    * @returns Whether the robot movement is unsafe for the obstacle
    */
-  virtual bool verify_obstacle_reach(const std::vector<reach_lib::Cylinder>& robot_cylinder, 
-      std::vector<reach_lib::Cylinder> obstacle_cylinder) = 0;
+  virtual bool verify_obstacle_reach(const std::vector<reach_lib::Capsule>& robot_capsules, 
+      std::vector<reach_lib::Cylinder> obstacle_cylinders) = 0;
 };
 } // namespace safety_shield
 

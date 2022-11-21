@@ -185,6 +185,15 @@ class LongTermTraj {
     return long_term_traj_[getTrajectoryIndex(index)];
   }
 
+  /**
+   * @brief Get the last motion of the ltt
+   * 
+   * @return Motion
+   */
+  inline Motion getLastMotion() {
+    return long_term_traj_[long_term_traj_.size()-1];
+  }
+  
   inline int getTrajectoryIndex(int index) const {
     int desired_pos = std::min(index-starting_index_, length_-1);
     if (desired_pos < current_pos_) {
@@ -228,6 +237,9 @@ class LongTermTraj {
    * @param k sliding window size
    */
   void calculate_max_acc_jerk_window(std::vector<Motion> &long_term_traj, int k);
+
+
+  inline std::vector<Motion> getPath() {return long_term_traj_;}
 };
 }
 #endif // LONG_TERM_TRAJ_H

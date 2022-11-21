@@ -18,6 +18,7 @@
  */
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/eigen.h>
 
 #include "safety_shield/safety_shield.h"
 
@@ -101,13 +102,20 @@ PYBIND11_MODULE(safety_shield_py, handle) {
       py::arg("init_yaw"),
       py::arg("init_qpos"),
       py::arg("current_time"))
-    .def("step", &safety_shield::SafetyShield::step, py::arg("cycle_begin_time"))
-    .def("newLongTermTrajectory", &safety_shield::SafetyShield::newLongTermTrajectory, py::arg("goal_position"), py::arg("goal_velocity"))
+    .def("step", &safety_shield::SafetyShield::step, py::arg("cycle_begin_time"), py::arg("current_motion"))
+    .def("newLongTermTrajectory", &safety_shield::SafetyShield::newLongTermTrajectory, py::arg("goal_position"), py::arg("goal_velocity"), py::arg("goal_acceleration"))
+    .def("newLongTermTrajectoryFromMotion", &safety_shield::SafetyShield::newLongTermTrajectoryFromMotion, py::arg("motion_list"))
     .def("setLongTermTrajectory", &safety_shield::SafetyShield::setLongTermTrajectory, py::arg("traj"))
-    .def("obstacleMeasurement", static_cast<void (safety_shield::SafetyShield::*)(const std::vector<std::vector<double>> obstacle_measurements, double time)>(&safety_shield::SafetyShield::obstacleMeasurement), py::arg("obstacle_measurement"), py::arg("time"))
-    .def("getRobotReachCylinders", &safety_shield::SafetyShield::getRobotReachCylinders)
+    .def("setObstacleMeasurement", &safety_shield::SafetyShield::setObstacleMeasurement, py::arg("obstacle_measurement"), py::arg("time"))
+    .def("getRobotReachCapsules", &safety_shield::SafetyShield::getRobotReachCapsules)
     .def("getObstacleReachCylinders", &safety_shield::SafetyShield::getObstacleReachCylinders)
     .def("getSafety", &safety_shield::SafetyShield::getSafety)
   ;
-  
+  // Gym_traj_planner class
+  py::class_<safety_shield::GymTrajPlanner>(handle, "GymTrajPlanner")
+    .def(py::init<int, double>(),
+      py::arg("steps_ahead"),
+      py::arg("timestep"))
+    .def("planner_point", &safety_shield::GymTrajPlanner::planner_point, py::arg("action"), py::arg("robot_vel"), py::arg("previous_ctrl"), py::arg("robot_rot"), py::arg("robot_com"))
+  ;
 }

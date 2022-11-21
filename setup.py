@@ -157,9 +157,11 @@ class CMakeBuild(build_ext):
         # )
         subprocess.check_call(
             ["cmake", "-DPYTHON_EXECUTABLE:FILEPATH=/bin/python3",
-                "-DPYTHON_INCLUDE_DIR=/usr/include/python3.8/",
+                "-DPYTHON_INCLUDE_DIR=/usr/local/include/python3.8",
+                # "-DPYTHON_INCLUDE_DIR=/usr/include/python3.8/",
                 "-DPYTHON_LIBRARY:FILEPATH=/lib/libpython3.8.so",
-                "-DEigen3_DIR=/home/tergaim/workspace/Thesis/eigen-3.4.0/cmake/",
+                "-DEigen3_DIR="+os.environ["Eigen3_DIR"],
+                # "-DEigen3_DIR=/home/tergaim/workspace/Thesis/eigen-3.4.0/cmake/",
                 ext.sourcedir] + cmake_args, cwd=self.build_temp
         )
         subprocess.check_call(

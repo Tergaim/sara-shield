@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME}
     src/robot_reach.cc 
     src/obstacle_reach.cc
     src/verify_iso.cc 
+    src/gym_traj_planner.cc
     #src/advanced_verify_iso.cc
     )
 
