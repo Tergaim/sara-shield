@@ -113,13 +113,13 @@ PYBIND11_MODULE(safety_shield_py, handle) {
   ;
   // Gym_traj_planner class
   py::class_<safety_shield::GymTrajPlanner>(handle, "GymTrajPlanner")
-    .def(py::init<int, double>(),
+    .def(py::init<int, double, std::vector<Eigen::Vector2d>, std::vector<float>, int>(),
       py::arg("steps_ahead"),
       py::arg("timestep"),
       py::arg("obstacles"),
       py::arg("obstacles_radius"),
       py::arg("n_tries"))
     .def("planner_point", &safety_shield::GymTrajPlanner::planner_point, py::arg("action"), py::arg("robot_vel"), py::arg("previous_ctrl"), py::arg("robot_rot"), py::arg("robot_com"))
-    .def("get_action", &safety_shield::GymTrajPlaner::get_action)
+    .def("get_action", &safety_shield::GymTrajPlanner::get_action)
   ;
 }

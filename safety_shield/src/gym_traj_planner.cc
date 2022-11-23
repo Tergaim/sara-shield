@@ -7,9 +7,10 @@ namespace safety_shield
     std::vector<Motion> GymTrajPlanner::planner_point(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Vector2d previous_ctrl, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com)
     {
         // std::cout << "action = "<< action.transpose() << std::endl;
-        selected_action_ = action;
+        Eigen::Map<Eigen::Vector2d>(selected_action_.data(), selected_action_.size()) = action;
+
         std::vector<Motion> planned_motions;
-        planned_motions.reserve(steps_ahead);
+        planned_motions.reserve(steps_ahead_);
 
         bool initial_loop_ok = planner_point_loop(action, robot_vel, previous_ctrl, robot_rot, robot_com, planned_motions);
 
@@ -24,11 +25,11 @@ namespace safety_shield
 
         while (valid_actions_found < n_tries_ && total_tries < 100)
         {
-            for (int i = 1; i < steps_ahead; i++)
+            for (int i = 1; i < steps_ahead_; i++)
             {
                 total_tries++;
                 std::vector<Motion> replanned_motions;
-                replanned_motions.reserve(steps_ahead);
+                replanned_motions.reserve(steps_ahead_);
                 Eigen::Vector2d action = 0.05 * Eigen::Vector2d::Random(); // select random action in [-0.05; 0.05], ctrl range limits
                 bool loop_ok = planner_point_loop(action, robot_vel, previous_ctrl, robot_rot, robot_com, replanned_motions);
 
@@ -41,7 +42,7 @@ namespace safety_shield
                     {
                         planned_motions = replanned_motions;
                         best_dist = dist;
-                        selected_action_ = action;
+                        Eigen::Map<Eigen::Vector2d>(selected_action_.data(), selected_action_.size()) = action;
                     }
                 }
             }
@@ -61,26 +62,26 @@ namespace safety_shield
 
         action.cwiseMax(0.05).cwiseMin(-0.05); // clip force to Mujoco actuator range
 
-        for (int i = 1; i < steps_ahead; i++)
+        for (int i = 1; i < steps_ahead_; i++)
         {
-            double acc_h = action(0) / point_mass;
+            double acc_h = action(0) / point_mass_;
             const double theta = action(1);
 
             // integrate rotation matrix
             Eigen::Matrix2d thetadot;
-            double ct = std::cos(theta * timestep);
-            double st = std::sin(theta * timestep);
+            double ct = std::cos(theta * timestep_);
+            double st = std::sin(theta * timestep_);
             thetadot << ct, -st, st, ct;
             robot_rot = robot_rot * thetadot;
 
             Eigen::Vector2d acc_h_vector;
             acc_h_vector << acc_h, 0;
             acceleration = robot_rot * acc_h_vector;
-            robot_vel += timestep * acceleration;
-            robot_com += timestep * robot_vel;
+            robot_vel += timestep_ * acceleration;
+            robot_com += timestep_ * robot_vel;
 
-            for (int i = 0; i < obstacles.size(); i++)
-                if ((robot_com - obstacles[i]).squaredNorm() < obstacles_radius_[i] + 0.15)
+            for (int i = 0; i < obstacles_.size(); i++)
+                if ((robot_com - obstacles_[i]).squaredNorm() < obstacles_radius_[i] + 0.15)
                     no_collision = false;
 
             Eigen::Map<Eigen::Vector2d>(pos.data(), pos.size()) = robot_com;
