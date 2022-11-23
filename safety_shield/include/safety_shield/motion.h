@@ -300,6 +300,11 @@ class Motion {
    * @param new_jerk the new motion's jerk
    */
   inline void setJerk(const std::vector<double> &new_dddq) { dddq_ = new_dddq; }
+
+  inline float squaredDist(Motion m){
+    std::vector<double> p = m.getPos();
+    return (q_[0]-p[0])*(q_[0]-p[0]) + (q_[1]-p[1])*(q_[1]-p[1]);
+  }
 };
 } // namespace safety_shield
 
