@@ -64,6 +64,11 @@ namespace safety_shield
 
         for (int i = 1; i < steps_ahead_; i++)
         {
+            if (i >= 10)
+            {
+                action = point_slowdown(robot_vel, robot_rot);
+                action.cwiseMax(0.05).cwiseMin(-0.05);
+            }
             double acc_h = action(0) / point_mass_;
             const double theta = action(1);
 
@@ -81,7 +86,7 @@ namespace safety_shield
             robot_com += timestep_ * robot_vel;
 
             for (int i = 0; i < obstacles_.size(); i++)
-                if ((robot_com - obstacles_[i]).squaredNorm() < obstacles_radius_[i] + 0.15)
+                if ((robot_com - obstacles_[i]).squaredNorm() < (obstacles_radius_[i] + 0.15) * (obstacles_radius_[i] + 0.15))
                     no_collision = false;
 
             Eigen::Map<Eigen::Vector2d>(pos.data(), pos.size()) = robot_com;
@@ -92,4 +97,12 @@ namespace safety_shield
         return no_collision;
     }
 
+    Eigen::Vector2d GymTrajPlanner::point_slowdown(Eigen::Vector2d robot_vel, Eigen::Matrix2d robot_rot)
+    {
+        Eigen::Vector2d v_h = robot_rot.inverse() * robot_vel; // project velocity on x axis
+        double sign_vx = (v_h(0) > 0) - (v_h(0) < 0);
+        Eigen::Vector2d action;
+        action << -sign_vx, 0;
+        return action;
+    }
 }
