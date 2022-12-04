@@ -121,6 +121,6 @@ PYBIND11_MODULE(safety_shield_py, handle) {
       py::arg("n_tries"))
     .def("planner_point", &safety_shield::GymTrajPlanner::planner_point, py::arg("action"), py::arg("robot_vel"), py::arg("previous_ctrl"), py::arg("robot_rot"), py::arg("robot_com"))
     .def("get_action", &safety_shield::GymTrajPlanner::get_action)
-    .def("point_slowdown", &safety_shield::GymTrajPlanner::point_slowdown, py::arg("robot_vel"), py::arg("robot_rot"))
+    .def("point_slowdown", &safety_shield::GymTrajPlanner::point_slowdown, py::arg("robot_vel"), py::arg("action_0"), py::arg("action_1"), py::arg("robot_rot")) // TODO FIX EIGEN DECLARATION BUG
   ;
 }

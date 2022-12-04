@@ -66,7 +66,7 @@ namespace safety_shield
         {
             if (i >= 10)
             {
-                action = point_slowdown(robot_vel, robot_rot);
+                action = point_slowdown(robot_vel, action(0), action(1), robot_rot);
                 action.cwiseMax(0.05).cwiseMin(-0.05);
             }
             double acc_h = action(0) / point_mass_;
@@ -97,12 +97,20 @@ namespace safety_shield
         return no_collision;
     }
 
-    Eigen::Vector2d GymTrajPlanner::point_slowdown(Eigen::Vector2d robot_vel, Eigen::Matrix2d robot_rot)
+    // Eigen::Vector2d point_slowdown(Eigen::Vector2d robot_vel, Eigen::Vector2d planned_action, Eigen::Matrix2d robot_rot)
+    Eigen::Vector2d GymTrajPlanner::point_slowdown(Eigen::Vector2d robot_vel, double action_0, double action_1, Eigen::Matrix2d robot_rot)
     {
+        // Eigen::Vector2d planned_action;
         Eigen::Vector2d v_h = robot_rot.inverse() * robot_vel; // project velocity on x axis
-        double sign_vx = (v_h(0) > 0) - (v_h(0) < 0);
+        double sign_vx = (v_h(0) > 0.01) - (v_h(0) < -0.01);
         Eigen::Vector2d action;
         action << -sign_vx, 0;
+        if (sign_vx > 0.5 || sign_vx < 0.5)
+        {
+            double l1 = v_h(0) * timestep_ + timestep_ * timestep_ * (action_0 / 2); // distance traveled in next timestep with planned action
+            double l2 = v_h(0) * timestep_ - timestep_ * timestep_ * (sign_vx * 0.05 / 2);    // distance traveled in next timestep with slowdown
+            action(1) = action_1 * (l2 / l1);
+        }
         return action;
     }
 }

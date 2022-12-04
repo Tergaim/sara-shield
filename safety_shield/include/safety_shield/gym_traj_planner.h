@@ -29,11 +29,11 @@ namespace safety_shield
 
         std::vector<Motion> planner_point(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Vector2d previous_ctrl, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com);
         bool planner_point_loop(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Vector2d previous_ctrl, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com, std::vector<Motion> &planned_motions);
+        Eigen::Vector2d point_slowdown(Eigen::Vector2d robot_vel, double action_0, double action_1, Eigen::Matrix2d robot_rot);
         void planner_car(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Vector2d previous_ctrl, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com){};
-        Eigen::Vector2d point_slowdown(Eigen::Vector2d robot_vel, Eigen::Matrix2d robot_rot);
 
-            inline std::vector<double> get_action() { return selected_action_; };
-        };
-    }
+        inline std::vector<double> get_action() { return selected_action_; };
+    };
+}
 
 #endif // GYM_TRAJ_H
