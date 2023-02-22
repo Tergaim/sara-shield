@@ -4,7 +4,7 @@
 
 namespace safety_shield
 {
-    std::vector<Motion> GymTrajPlanner::planner_point(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Vector2d previous_ctrl, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com)
+    std::vector<Motion> GymTrajPlanner::planner_point(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com, bool policy_step)
     {
         // std::cout << "action = "<< action.transpose() << std::endl;
         Eigen::Map<Eigen::Vector2d>(selected_action_.data(), selected_action_.size()) = action;
@@ -12,7 +12,7 @@ namespace safety_shield
         std::vector<Motion> planned_motions;
         planned_motions.reserve(steps_ahead_);
 
-        bool initial_loop_ok = planner_point_loop(action, robot_vel, previous_ctrl, robot_rot, robot_com, planned_motions);
+        bool initial_loop_ok = planner_point_loop(action, robot_vel, robot_rot, robot_com, policy_step, planned_motions);
 
         if (initial_loop_ok || n_tries_ < 1)
             return planned_motions;
@@ -23,34 +23,31 @@ namespace safety_shield
         Motion original_goal = planned_motions[planned_motions.size() - 1];
         float best_dist = 10000000;
 
-        while (valid_actions_found < n_tries_ && total_tries < 100)
+        while (valid_actions_found < n_tries_ && total_tries < max_tries_)
         {
-            for (int i = 1; i < steps_ahead_; i++)
-            {
-                total_tries++;
-                std::vector<Motion> replanned_motions;
-                replanned_motions.reserve(steps_ahead_);
-                Eigen::Vector2d action = 0.05 * Eigen::Vector2d::Random(); // select random action in [-0.05; 0.05], ctrl range limits
-                bool loop_ok = planner_point_loop(action, robot_vel, previous_ctrl, robot_rot, robot_com, replanned_motions);
+            total_tries++;
+            std::vector<Motion> replanned_motions;
+            replanned_motions.reserve(steps_ahead_);
+            Eigen::Vector2d action = 0.05 * Eigen::Vector2d::Random(); // select random action in [-0.05; 0.05], ctrl range limits
+            bool loop_ok = planner_point_loop(action, robot_vel, robot_rot, robot_com, policy_step, replanned_motions);
 
-                if (loop_ok)
+            if (loop_ok)
+            {
+                valid_actions_found++;
+                Motion new_goal = replanned_motions[replanned_motions.size() - 1];
+                float dist = new_goal.squaredDist(original_goal);
+                if (dist < best_dist)
                 {
-                    valid_actions_found++;
-                    Motion new_goal = replanned_motions[replanned_motions.size() - 1];
-                    float dist = new_goal.squaredDist(original_goal);
-                    if (dist < best_dist)
-                    {
-                        planned_motions = replanned_motions;
-                        best_dist = dist;
-                        Eigen::Map<Eigen::Vector2d>(selected_action_.data(), selected_action_.size()) = action;
-                    }
+                    planned_motions = replanned_motions;
+                    best_dist = dist;
+                    Eigen::Map<Eigen::Vector2d>(selected_action_.data(), selected_action_.size()) = action;
                 }
             }
         }
         return planned_motions;
     }
 
-    bool GymTrajPlanner::planner_point_loop(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Vector2d previous_ctrl, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com, std::vector<Motion> &planned_motions)
+    bool GymTrajPlanner::planner_point_loop(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com, bool policy_step, std::vector<Motion> &planned_motions)
     {
         bool no_collision = true;
         Eigen::Vector2d acceleration(0, 0);
@@ -64,11 +61,6 @@ namespace safety_shield
 
         for (int i = 1; i < steps_ahead_; i++)
         {
-            if (i >= 10)
-            {
-                action = point_slowdown(robot_vel, action(0), action(1), robot_rot);
-                action.cwiseMax(0.05).cwiseMin(-0.05);
-            }
             double acc_h = action(0) / point_mass_;
             const double theta = action(1);
 
@@ -93,12 +85,39 @@ namespace safety_shield
             Eigen::Map<Eigen::Vector2d>(vel.data(), vel.size()) = robot_vel;
             Eigen::Map<Eigen::Vector2d>(acc.data(), acc.size()) = acceleration;
             planned_motions.push_back(Motion(0, pos, vel, acc));
+
+            // First sim step is robot action, the rest is a failsafe
+            // However if validation trajectory, we execute action for longer
+            if(!policy_step)
+                {action = point_slowdown(robot_vel, action(0), action(1), robot_rot);
+                action.cwiseMax(0.05).cwiseMin(-0.05);}
+
+            if (robot_vel.squaredNorm() < 0.005)
+                break;
         }
         return no_collision;
     }
 
+    inline double sign(double x){return (x>0.001) - (x<0.001);}
+
     // Eigen::Vector2d point_slowdown(Eigen::Vector2d robot_vel, Eigen::Vector2d planned_action, Eigen::Matrix2d robot_rot)
     Eigen::Vector2d GymTrajPlanner::point_slowdown(Eigen::Vector2d robot_vel, double action_0, double action_1, Eigen::Matrix2d robot_rot)
+    {
+        Eigen::Vector2d action;
+        action << 0, 0;
+
+        const double phi = atan2(robot_vel(1), robot_vel(0));
+        const double heading = atan2(robot_rot(1,0), robot_rot(0,0));
+
+        action(1) = phi - heading;
+
+        if(abs(action(1)) < 0.01)
+            action(0) = -sign(cos(phi)*robot_vel(0) - sin(phi)*robot_vel(1)); 
+
+        return action;
+    }
+
+    Eigen::Vector2d GymTrajPlanner::point_slowdown_old(Eigen::Vector2d robot_vel, double action_0, double action_1, Eigen::Matrix2d robot_rot)
     {
         Eigen::Vector2d v_h = robot_rot.inverse() * robot_vel; // project velocity on x axis
         double sign_vx = (v_h(0) > 0.01) - (v_h(0) < -0.01);
@@ -115,14 +134,14 @@ namespace safety_shield
         return action;
     }
 
-    std::vector<Motion> GymTrajPlanner::planner_car(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Vector2d previous_ctrl, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com)
+    std::vector<Motion> GymTrajPlanner::planner_car(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com)
     {
         Eigen::Map<Eigen::Vector2d>(selected_action_.data(), selected_action_.size()) = action;
 
         std::vector<Motion> planned_motions;
         planned_motions.reserve(steps_ahead_);
 
-        bool initial_loop_ok = planner_car_loop(action, robot_vel, previous_ctrl, robot_rot, robot_com, planned_motions);
+        bool initial_loop_ok = planner_car_loop(action, robot_vel, robot_rot, robot_com, planned_motions);
 
         if (initial_loop_ok || n_tries_ < 1)
             return planned_motions;
@@ -141,7 +160,7 @@ namespace safety_shield
                 std::vector<Motion> replanned_motions;
                 replanned_motions.reserve(steps_ahead_);
                 Eigen::Vector2d action = 0.05 * Eigen::Vector2d::Random(); // select random action in [-0.05; 0.05], ctrl range limits
-                bool loop_ok = planner_car_loop(action, robot_vel, previous_ctrl, robot_rot, robot_com, replanned_motions);
+                bool loop_ok = planner_car_loop(action, robot_vel, robot_rot, robot_com, replanned_motions);
 
                 if (loop_ok)
                 {
@@ -160,7 +179,7 @@ namespace safety_shield
         return planned_motions;
     }
 
-    bool GymTrajPlanner::planner_car_loop(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Vector2d previous_ctrl, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com, std::vector<Motion> &planned_motions)
+    bool GymTrajPlanner::planner_car_loop(Eigen::Vector2d action, Eigen::Vector2d robot_vel, Eigen::Matrix2d robot_rot, Eigen::Vector2d robot_com, std::vector<Motion> &planned_motions)
     {
         bool no_collision = true;
         Eigen::Vector2d acceleration(0, 0);
@@ -242,5 +261,4 @@ namespace safety_shield
 
         return action;
     }
-
 }

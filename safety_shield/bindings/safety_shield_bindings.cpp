@@ -113,16 +113,17 @@ PYBIND11_MODULE(safety_shield_py, handle) {
   ;
   // Gym_traj_planner class
   py::class_<safety_shield::GymTrajPlanner>(handle, "GymTrajPlanner")
-    .def(py::init<int, double, std::vector<Eigen::Vector2d>, std::vector<float>, int>(),
+    .def(py::init<int, double, std::vector<Eigen::Vector2d>, std::vector<float>, int, int>(),
       py::arg("steps_ahead"),
       py::arg("timestep"),
       py::arg("obstacles"),
       py::arg("obstacles_radius"),
-      py::arg("n_tries"))
+      py::arg("n_tries"),
+      py::arg("max_tries"))
     .def("get_action", &safety_shield::GymTrajPlanner::get_action)
-    .def("planner_point", &safety_shield::GymTrajPlanner::planner_point, py::arg("action"), py::arg("robot_vel"), py::arg("previous_ctrl"), py::arg("robot_rot"), py::arg("robot_com"))
+    .def("planner_point", &safety_shield::GymTrajPlanner::planner_point, py::arg("action"), py::arg("robot_vel"), py::arg("robot_rot"), py::arg("robot_com"), py::arg("policy_step"))
     .def("point_slowdown", &safety_shield::GymTrajPlanner::point_slowdown, py::arg("robot_vel"), py::arg("action_0"), py::arg("action_1"), py::arg("robot_rot")) // TODO FIX EIGEN DECLARATION BUG
-    .def("planner_car", &safety_shield::GymTrajPlanner::planner_car, py::arg("action"), py::arg("robot_vel"), py::arg("previous_ctrl"), py::arg("robot_rot"), py::arg("robot_com"))
+    .def("planner_car", &safety_shield::GymTrajPlanner::planner_car, py::arg("action"), py::arg("robot_vel"), py::arg("robot_rot"), py::arg("robot_com"))
     .def("car_slowdown", &safety_shield::GymTrajPlanner::car_slowdown, py::arg("robot_vel"), py::arg("action_0"), py::arg("action_1"), py::arg("robot_rot")) // TODO FIX EIGEN DECLARATION BUG
   ;
 }
